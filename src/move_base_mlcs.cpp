@@ -899,7 +899,7 @@ namespace move_base_mlcs {
           as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
           //TODO: publish task flag
           std_msgs::Bool task_flag;
-          task_flag.data = true;
+          task_flag.data = false;
           task_flag_pub_.publish(task_flag);
           return true;
         }
