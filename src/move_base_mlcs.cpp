@@ -57,7 +57,7 @@ namespace move_base_mlcs {
     blp_loader_("nav_core", "nav_core::BaseLocalPlanner"),
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
-    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false) {
+    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false), task_flag_(false) {
 
     as_ = new MoveBaseMLCSActionServer(ros::NodeHandle(), "move_base_mlcs", boost::bind(&MoveBaseMLCS::executeCb, this, _1), false);
 
@@ -100,6 +100,7 @@ namespace move_base_mlcs {
     ros::NodeHandle action_nh("move_base_mlcs");
     action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
     recovery_status_pub_ = action_nh.advertise<move_base_msgs::RecoveryStatus>("recovery_status", 1);
+    task_flag_sub_ = action_nh.subscribe<std_msgs::Bool>("task_flag", 1, boost::bind(&MoveBaseMLCS::flagCB, this, _1));
     task_flag_pub_ = action_nh.advertise<std_msgs::Bool>("task_flag", 1);
 
     //we'll provide a mechanism for some people to send goals as PoseStamped messages over a topic
@@ -275,12 +276,18 @@ namespace move_base_mlcs {
   }
 
   void MoveBaseMLCS::goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal){
-    ROS_DEBUG_NAMED("move_base_mlcs","In ROS goal callback, wrapping the PoseStamped in the action message and re-sending to the server.");
-    move_base_msgs::MoveBaseActionGoal action_goal;
-    action_goal.header.stamp = ros::Time::now();
-    action_goal.goal.target_pose = *goal;
+    if (task_flag_) {
+      ROS_DEBUG_NAMED("move_base_mlcs","In ROS goal callback, wrapping the PoseStamped in the action message and re-sending to the server.");
+      move_base_msgs::MoveBaseActionGoal action_goal;
+      action_goal.header.stamp = ros::Time::now();
+      action_goal.goal.target_pose = *goal;
 
-    action_goal_pub_.publish(action_goal);
+      action_goal_pub_.publish(action_goal);
+    }
+  }
+
+  void MoveBaseMLCS::flagCB(const std_msgs::Bool::ConstPtr& task_flag_msg){
+    task_flag_ = task_flag_msg->data;
   }
 
   void MoveBaseMLCS::clearCostmapWindows(double size_x, double size_y){
@@ -897,10 +904,9 @@ namespace move_base_mlcs {
           lock.unlock();
 
           as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
-          //TODO: publish task flag
-          std_msgs::Bool task_flag;
-          task_flag.data = false;
-          task_flag_pub_.publish(task_flag);
+          std_msgs::Bool task_flag_msg;
+          task_flag_msg.data = false;
+          task_flag_pub_.publish(task_flag_msg);
           return true;
         }
 
