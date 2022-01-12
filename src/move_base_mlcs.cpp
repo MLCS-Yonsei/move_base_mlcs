@@ -44,6 +44,7 @@
 
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Int8.h>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
@@ -100,8 +101,8 @@ namespace move_base_mlcs {
     ros::NodeHandle action_nh("move_base_mlcs");
     action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
     recovery_status_pub_ = action_nh.advertise<move_base_msgs::RecoveryStatus>("recovery_status", 1);
-    task_flag_sub_ = action_nh.subscribe<std_msgs::Bool>("task_flag", 1, boost::bind(&MoveBaseMLCS::flagCB, this, _1));
-    task_flag_pub_ = action_nh.advertise<std_msgs::Bool>("task_flag", 1);
+    task_flag_sub_ = action_nh.subscribe<std_msgs::int8>("task_flag/from", 1, boost::bind(&MoveBaseMLCS::flagCB, this, _1));
+    task_flag_pub_ = action_nh.advertise<std_msgs::int8>("task_flag/to", 1);
 
     //we'll provide a mechanism for some people to send goals as PoseStamped messages over a topic
     //they won't get any useful information back about its status, but this is useful for tools
@@ -276,7 +277,7 @@ namespace move_base_mlcs {
   }
 
   void MoveBaseMLCS::goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal){
-    if (task_flag_) {
+    if (task_flag_== ACTIVE) {
       ROS_DEBUG_NAMED("move_base_mlcs","In ROS goal callback, wrapping the PoseStamped in the action message and re-sending to the server.");
       move_base_msgs::MoveBaseActionGoal action_goal;
       action_goal.header.stamp = ros::Time::now();
@@ -286,7 +287,7 @@ namespace move_base_mlcs {
     }
   }
 
-  void MoveBaseMLCS::flagCB(const std_msgs::Bool::ConstPtr& task_flag_msg){
+  void MoveBaseMLCS::flagCB(const std_msgs::Int8::ConstPtr& task_flag_msg){
     task_flag_ = task_flag_msg->data;
   }
 
@@ -905,7 +906,7 @@ namespace move_base_mlcs {
 
           as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
           std_msgs::Bool task_flag_msg;
-          task_flag_msg.data = false;
+          task_flag_msg.data = SUCCESS;
           task_flag_pub_.publish(task_flag_msg);
           return true;
         }
