@@ -50,6 +50,7 @@
 #include <nav_core/recovery_behavior.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Int8.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/costmap_2d.h>
 #include <nav_msgs/GetPlan.h>
@@ -59,6 +60,11 @@
 
 #include <dynamic_reconfigure/server.h>
 #include "move_base_mlcs/MoveBaseMLCSConfig.h"
+
+#define ERROR -1
+#define INACTIVE 0
+#define ACTIVE 1
+#define SUCCESS 2
 
 namespace move_base_mlcs {
   //typedefs to help us out with the action server so that we don't hace to type so much
@@ -159,7 +165,7 @@ namespace move_base_mlcs {
 
       void goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal);
 
-      void flagCB(const std_msgs::Bool::ConstPtr& task_flag_msg);
+      void flagCB(const std_msgs::Int8::ConstPtr& task_flag_msg);
 
       void planThread();
 
@@ -203,7 +209,7 @@ namespace move_base_mlcs {
       ros::ServiceServer make_plan_srv_, clear_costmaps_srv_;
       bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_;
       bool make_plan_clear_costmap_, make_plan_add_unreachable_goal_;
-      bool task_flag_;
+      int8_t task_flag_;
       double oscillation_timeout_, oscillation_distance_;
 
       MoveBaseMLCSState state_;
