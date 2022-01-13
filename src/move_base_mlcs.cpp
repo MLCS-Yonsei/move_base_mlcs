@@ -58,7 +58,7 @@ namespace move_base_mlcs {
     blp_loader_("nav_core", "nav_core::BaseLocalPlanner"),
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
-    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false), task_flag_(false) {
+    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false), task_flag_(0) {
 
     as_ = new MoveBaseMLCSActionServer(ros::NodeHandle(), "move_base_mlcs", boost::bind(&MoveBaseMLCS::executeCb, this, _1), false);
 
@@ -101,8 +101,8 @@ namespace move_base_mlcs {
     ros::NodeHandle action_nh("move_base_mlcs");
     action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
     recovery_status_pub_ = action_nh.advertise<move_base_msgs::RecoveryStatus>("recovery_status", 1);
-    task_flag_sub_ = action_nh.subscribe<std_msgs::int8>("task_flag/from", 1, boost::bind(&MoveBaseMLCS::flagCB, this, _1));
-    task_flag_pub_ = action_nh.advertise<std_msgs::int8>("task_flag/to", 1);
+    task_flag_sub_ = action_nh.subscribe<std_msgs::Int8>("task_flag", 1, boost::bind(&MoveBaseMLCS::flagCB, this, _1));
+    task_flag_pub_ = action_nh.advertise<std_msgs::Int8>("task_flag", 1);
 
     //we'll provide a mechanism for some people to send goals as PoseStamped messages over a topic
     //they won't get any useful information back about its status, but this is useful for tools
@@ -905,7 +905,7 @@ namespace move_base_mlcs {
           lock.unlock();
 
           as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
-          std_msgs::Bool task_flag_msg;
+          std_msgs::Int8 task_flag_msg;
           task_flag_msg.data = SUCCESS;
           task_flag_pub_.publish(task_flag_msg);
           return true;
